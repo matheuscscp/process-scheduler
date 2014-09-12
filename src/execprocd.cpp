@@ -23,9 +23,9 @@ struct Process {
   pid_t pid;
   key_t key;
   int nchange;
-  clock_t initial_time, final_time;
+  Time::type initial_time, final_time;
   Process(pid_t pid = 0, key_t key = 0) :
-  pid(pid), key(key), nchange(0), initial_time(clock()), final_time(0)
+  pid(pid), key(key), nchange(0), initial_time(Time::get()), final_time(0)
   {
     
   }
@@ -87,14 +87,12 @@ void execute_process(const ExecMessage& msg) {
 }
 
 void stop_process(const StopMessage& msg) {
-  rep.nstop++;
-  
   Process p;
   
   // check if process is already in the dead pool
   map<pid_t, Process>::iterator it = dead_processes.find(msg.pid);
   if (it == dead_processes.end()) {
-    clock_t final_time = clock();
+    Time::type final_time = Time::get();
     
     // search process in all queues
     for (int priority = PRIORITY_HIGH; priority <= PRIORITY_LOW; priority++) {
@@ -121,6 +119,7 @@ void stop_process(const StopMessage& msg) {
     
     // if the process exists
     if (p.pid) {
+      rep.nstop++;
       dead_processes[p.pid] = p;
       notify_launcher(p);
     }
@@ -133,7 +132,7 @@ void stop_process(const StopMessage& msg) {
   }
   
   // answer exec info
-  Message execinfomsg(Message::EXECINFO);
+  Message execinfomsg(p.pid ? Message::EXECINFO : Message::NOTFOUND);
   execinfomsg.content.execinfo.wclock = p.final_time - p.initial_time;
   execinfomsg.content.execinfo.nchange = p.nchange;
   outbox.send(execinfomsg);
@@ -144,7 +143,7 @@ void killall() {
     list<Process>& pqueue = queues[priority];
     while (pqueue.size()) {
       Process p = pqueue.front();
-      p.final_time = clock();
+      p.final_time = Time::get();
       pqueue.pop_front();
       kill(p.pid, SIGKILL);
       notify_launcher(p);
@@ -206,14 +205,13 @@ void execprocd(int argc, char** argv) {
       rep.nchange++;
       
       // calculate quantum final time
-      clock_t t = clock();
-      t += clock_t((schedule.quantum/1000000.0f)*CLOCKS_PER_SEC);
+      Time::type t = Time::get() + schedule.quantum;
       
       kill(schedule.process.pid, SIGCONT);
       
       // wait until quantum is over or until process is killed
-      while (clock() < t && kill(schedule.process.pid, 0) >= 0) {
-        usleep(1000);
+      while (Time::get() < t && kill(schedule.process.pid, 0) >= 0) {
+        Time::sleep(1);
       }
       
       // if the process is alive, recalculate priority and push to queue
@@ -224,13 +222,13 @@ void execprocd(int argc, char** argv) {
       }
       // if the process is dead, mark final time, put in dead pool and notify
       else {
-        schedule.process.final_time = clock();
+        schedule.process.final_time = Time::get();
         dead_processes[schedule.process.pid] = schedule.process;
         notify_launcher(schedule.process);
       }
     }
     else {
-      usleep(SLEEP_WAIT);
+      Time::sleep(SLEEP_WAIT);
     }
     process_messages();
   }

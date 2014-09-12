@@ -16,10 +16,10 @@
 #define PRIORITY_LOW  2
 
 #define QUANTUM_NA    0
-#define QUANTUM_HIGH  100000
-#define QUANTUM_MED   100000
-#define QUANTUM_LOW   100000
+#define QUANTUM_HIGH  100
+#define QUANTUM_MED   100
+#define QUANTUM_LOW   100
 
-#define SLEEP_WAIT  20000
+#define SLEEP_WAIT  20
 
 #endif /* DEFINES_HPP_ */

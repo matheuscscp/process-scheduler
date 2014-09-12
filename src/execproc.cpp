@@ -93,12 +93,11 @@ void execproc(int argc, char** argv) {
     Message execinfomsg;
     printf("waiting until the process %d terminate...\n", pid);
     while (!inbox.recv(execinfomsg)) {
-      usleep(SLEEP_WAIT);
+      Time::sleep(SLEEP_WAIT);
     }
     
     printf(
-      "wallclock time: %.3f\n",
-      execinfomsg.content.execinfo.wclock/float(CLOCKS_PER_SEC)
+      "wallclock time: %.3f s\n", execinfomsg.content.execinfo.wclock/1000.0f
     );
     printf("context changes: %d\n", execinfomsg.content.execinfo.nchange);
   }

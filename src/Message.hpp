@@ -10,7 +10,8 @@
 
 #include <unistd.h>
 #include <sys/ipc.h>
-#include <ctime>
+
+#include "Time.hpp"
 
 struct ExecMessage {
   pid_t pid;
@@ -28,7 +29,7 @@ struct TermMessage {
 };
 
 struct ExecInfoMessage {
-  clock_t wclock;
+  Time::type wclock;
   int nchange;
 };
 
@@ -38,7 +39,7 @@ struct ReportMessage {
 
 struct Message {
   enum {
-    NA = 0, EXEC, STOP, TERM, EXECINFO, REPORT
+    NA = 0, EXEC, STOP, TERM, EXECINFO, REPORT, NOTFOUND
   };
   long type;
   union Content {

@@ -62,13 +62,18 @@ void cancela_proc(int argc, char** argv) {
   // receive exec info message
   Message execinfomsg;
   while (!inbox.recv(execinfomsg)) {
-    usleep(SLEEP_WAIT);
+    Time::sleep(SLEEP_WAIT);
+  }
+  
+  // process id not found
+  if (execinfomsg.type != Message::EXECINFO) {
+    fprintf(stderr, "cancela_proc: process id not found\n");
+    return;
   }
   
   printf("process: %d\n", stopmsg.content.stop.pid);
   printf(
-    "wallclock time: %.3f\n",
-    execinfomsg.content.execinfo.wclock/float(CLOCKS_PER_SEC)
+    "wallclock time: %.3f s\n", execinfomsg.content.execinfo.wclock/1000.0f
   );
   printf("context changes: %d\n", execinfomsg.content.execinfo.nchange);
 }
