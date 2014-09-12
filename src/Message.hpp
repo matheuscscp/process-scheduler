@@ -15,6 +15,7 @@
 struct ExecMessage {
   pid_t pid;
   int priority;
+  key_t key;
 };
 
 struct StopMessage {

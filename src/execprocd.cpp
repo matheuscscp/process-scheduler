@@ -21,10 +21,11 @@ using namespace std;
 
 struct Process {
   pid_t pid;
+  key_t key;
   int nchange;
   clock_t initial_time, final_time;
-  Process(pid_t pid = 0) :
-  pid(pid), nchange(0), initial_time(clock()), final_time(0)
+  Process(pid_t pid = 0, key_t key = 0) :
+  pid(pid), key(key), nchange(0), initial_time(clock()), final_time(0)
   {
     
   }
@@ -55,6 +56,20 @@ inline useconds_t get_quantum(int priority) {
   }
 }
 
+void notify_launcher(const Process& process) {
+  // check if launcher is still alive
+  MessageOutbox outbox(process.key);
+  if (!outbox.is_open()) {
+    return;
+  }
+  
+  // notify
+  Message execinfomsg(Message::EXECINFO);
+  execinfomsg.content.execinfo.wclock = process.final_time-process.initial_time;
+  execinfomsg.content.execinfo.nchange = process.nchange;
+  outbox.send(execinfomsg);
+}
+
 Schedule choose_process() {
   for (int priority = PRIORITY_HIGH; priority <= PRIORITY_LOW; priority++) {
     if (queues[priority].size()) {
@@ -63,12 +78,12 @@ Schedule choose_process() {
       return Schedule(p, get_quantum(priority));
     }
   }
-  return Schedule(Process(0), 0);
+  return Schedule(Process(0, 0), 0);
 }
 
 void execute_process(const ExecMessage& msg) {
   rep.nexec++;
-  queues[msg.priority].push_back(Process(msg.pid));
+  queues[msg.priority].push_back(Process(msg.pid, msg.key));
 }
 
 void stop_process(const StopMessage& msg) {
@@ -107,6 +122,7 @@ void stop_process(const StopMessage& msg) {
     // if the process exists
     if (p.pid) {
       dead_processes[p.pid] = p;
+      notify_launcher(p);
     }
   }
   
@@ -121,6 +137,19 @@ void stop_process(const StopMessage& msg) {
   execinfomsg.content.execinfo.wclock = p.final_time - p.initial_time;
   execinfomsg.content.execinfo.nchange = p.nchange;
   outbox.send(execinfomsg);
+}
+
+void killall() {
+  for (int priority = PRIORITY_HIGH; priority <= PRIORITY_LOW; priority++) {
+    list<Process>& pqueue = queues[priority];
+    while (pqueue.size()) {
+      Process p = pqueue.front();
+      p.final_time = clock();
+      pqueue.pop_front();
+      kill(p.pid, SIGKILL);
+      notify_launcher(p);
+    }
+  }
 }
 
 void process_messages() {
@@ -142,6 +171,7 @@ void process_messages() {
           repmsg.content.report = rep;
           MessageOutbox outbox(msg.content.term.key);
           outbox.send(repmsg);
+          killall();
         }
         return;
         
@@ -192,10 +222,11 @@ void execprocd(int argc, char** argv) {
         schedule.process.nchange++;
         queues[rand()%3].push_back(schedule.process);
       }
-      // if the process is dead, mark final time and put in dead pool
+      // if the process is dead, mark final time, put in dead pool and notify
       else {
         schedule.process.final_time = clock();
         dead_processes[schedule.process.pid] = schedule.process;
+        notify_launcher(schedule.process);
       }
     }
     else {
