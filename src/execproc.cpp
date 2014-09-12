@@ -64,18 +64,17 @@ void execproc(int argc, char** argv) {
     return;
   }
   
+  // check if execprocd is running
+  MessageOutbox outbox(KEY_EXECPROCD);
+  if (!outbox.is_open()) {
+    fprintf(stderr, "execproc: execprocd is not running\n");
+    return;
+  }
+  
   pid_t pid = fork();
   
   // the parent process will show execution data
   if (pid) {
-    // check if execprocd is running
-    MessageOutbox outbox(KEY_EXECPROCD);
-    if (!outbox.is_open()) {
-      fprintf(stderr, "execproc: execproc is not running\n");
-      kill(pid, SIGKILL);
-      return;
-    }
-    
     MessageInbox inbox;
     
     // send exec message to execprocd

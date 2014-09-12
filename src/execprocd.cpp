@@ -49,6 +49,8 @@ ReportMessage rep;
 list<Process> queues[3];
 map<int, Process> dead_processes;
 int next_proc_id = 1;
+bool is_running_proc = false;
+Process running_proc;
 
 inline useconds_t get_quantum(int priority) {
   switch (priority) {
@@ -98,7 +100,7 @@ void execute_process(const ExecMessage& msg) {
 void stop_process(const StopMessage& msg) {
   Process p;
   
-  // check if process is already in the dead pool
+  // check if process is not in the dead pool
   map<int, Process>::iterator it = dead_processes.find(msg.proc_id);
   if (it == dead_processes.end()) {
     Time::type final_time = Time::get();
@@ -120,18 +122,30 @@ void stop_process(const StopMessage& msg) {
         }
       }
       
-      // stop searching the process was found
+      // stop searching if the process was found
       if (p.pid) {
         break;
       }
     }
     
-    // if the process exists
-    if (p.pid) {
-      rep.nstop++;
-      dead_processes[p.pid] = p;
-      notify_launcher(p);
-    }
+  }
+  
+  // check if the process to stop is the process running
+  if (!p.pid && is_running_proc && running_proc.proc_id == msg.proc_id) {
+    p = running_proc;
+  }
+  
+  // if the process exists, it is not in the dead pool
+  if (p.pid) {
+    kill(p.pid, SIGKILL);
+    p.final_time = Time::get();
+    rep.nstop++;
+    dead_processes[p.proc_id] = p;
+    notify_launcher(p);
+  }
+  // if the process is in the dead pool
+  else if (it != dead_processes.end()) {
+    p = it->second;
   }
   
   // check if killer outbox is open
@@ -211,6 +225,9 @@ void execprocd(int argc, char** argv) {
   while (!quit) {
     Schedule schedule = choose_process();
     if (schedule.quantum) {
+      running_proc = schedule.process;
+      is_running_proc = true;
+      
       rep.nchange++;
       
       // calculate quantum final time
@@ -231,11 +248,15 @@ void execprocd(int argc, char** argv) {
         queues[rand()%3].push_back(schedule.process);
       }
       // if the process is dead, mark final time, put in dead pool and notify
-      else {
+      else if (
+        dead_processes.find(schedule.process.proc_id) == dead_processes.end()
+      ) {
         schedule.process.final_time = Time::get();
         dead_processes[schedule.process.proc_id] = schedule.process;
         notify_launcher(schedule.process);
       }
+      
+      is_running_proc = false;
     }
     else {
       Time::sleep(SLEEP_WAIT);
