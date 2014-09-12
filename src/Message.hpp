@@ -19,8 +19,12 @@ struct ExecMessage {
   key_t key;
 };
 
+struct ExecAckMessage {
+  int proc_id;
+};
+
 struct StopMessage {
-  pid_t pid;
+  int proc_id;
   key_t key;
 };
 
@@ -39,11 +43,12 @@ struct ReportMessage {
 
 struct Message {
   enum {
-    NA = 0, EXEC, STOP, TERM, EXECINFO, REPORT, NOTFOUND
+    NA = 0, EXEC, EXECACK, STOP, TERM, EXECINFO, REPORT, NOTFOUND
   };
   long type;
   union Content {
     ExecMessage exec;
+    ExecAckMessage ack;
     StopMessage stop;
     TermMessage term;
     ExecInfoMessage execinfo;

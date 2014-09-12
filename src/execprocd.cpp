@@ -20,11 +20,13 @@
 using namespace std;
 
 struct Process {
+  int proc_id;
   pid_t pid;
   key_t key;
   int nchange;
   Time::type initial_time, final_time;
-  Process(pid_t pid = 0, key_t key = 0) :
+  Process(int proc_id = 0, pid_t pid = 0, key_t key = 0) :
+  proc_id(proc_id),
   pid(pid), key(key), nchange(0), initial_time(Time::get()), final_time(0)
   {
     
@@ -45,7 +47,8 @@ bool quit = false;
 MessageInbox* inbox = NULL;
 ReportMessage rep;
 list<Process> queues[3];
-map<pid_t, Process> dead_processes;
+map<int, Process> dead_processes;
+int next_proc_id = 1;
 
 inline useconds_t get_quantum(int priority) {
   switch (priority) {
@@ -83,14 +86,20 @@ Schedule choose_process() {
 
 void execute_process(const ExecMessage& msg) {
   rep.nexec++;
-  queues[msg.priority].push_back(Process(msg.pid, msg.key));
+  Message ackmsg(Message::EXECACK);
+  ackmsg.content.ack.proc_id = next_proc_id++;
+  queues[msg.priority].push_back(
+    Process(ackmsg.content.ack.proc_id, msg.pid, msg.key)
+  );
+  MessageOutbox outbox(msg.key);
+  outbox.send(ackmsg);
 }
 
 void stop_process(const StopMessage& msg) {
   Process p;
   
   // check if process is already in the dead pool
-  map<pid_t, Process>::iterator it = dead_processes.find(msg.pid);
+  map<int, Process>::iterator it = dead_processes.find(msg.proc_id);
   if (it == dead_processes.end()) {
     Time::type final_time = Time::get();
     
@@ -100,7 +109,7 @@ void stop_process(const StopMessage& msg) {
       
       // search process in the current queue
       for (list<Process>::iterator it = pqueue.begin(); it != pqueue.end();) {
-        if (it->pid == msg.pid) {
+        if (it->proc_id == msg.proc_id) {
           p = *it;
           p.final_time = final_time;
           pqueue.erase(it);
@@ -212,6 +221,7 @@ void execprocd(int argc, char** argv) {
       // wait until quantum is over or until process is killed
       while (Time::get() < t && kill(schedule.process.pid, 0) >= 0) {
         Time::sleep(1);
+        process_messages();
       }
       
       // if the process is alive, recalculate priority and push to queue
@@ -223,14 +233,14 @@ void execprocd(int argc, char** argv) {
       // if the process is dead, mark final time, put in dead pool and notify
       else {
         schedule.process.final_time = Time::get();
-        dead_processes[schedule.process.pid] = schedule.process;
+        dead_processes[schedule.process.proc_id] = schedule.process;
         notify_launcher(schedule.process);
       }
     }
     else {
       Time::sleep(SLEEP_WAIT);
+      process_messages();
     }
-    process_messages();
   }
   
   // destroy socket

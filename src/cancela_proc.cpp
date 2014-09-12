@@ -45,13 +45,11 @@ void cancela_proc(int argc, char** argv) {
   // parse pid
   stringstream ss;
   ss << argv[2];
-  ss >> stopmsg.content.stop.pid;
+  ss >> stopmsg.content.stop.proc_id;
   
   // get inbox key
   MessageInbox inbox;
   stopmsg.content.stop.key = inbox.getKey();
-  
-  kill(stopmsg.content.stop.pid, SIGKILL);
   
   outbox.send(stopmsg);
   
@@ -71,7 +69,7 @@ void cancela_proc(int argc, char** argv) {
     return;
   }
   
-  printf("process: %d\n", stopmsg.content.stop.pid);
+  printf("process: %d\n", stopmsg.content.stop.proc_id);
   printf(
     "wallclock time: %.3f s\n", execinfomsg.content.execinfo.wclock/1000.0f
   );

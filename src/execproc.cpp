@@ -89,9 +89,17 @@ void execproc(int argc, char** argv) {
     message_inbox = &inbox;
     signal(SIGINT, close_inbox);
     
+    // receive process id
+    Message ackmsg;
+    while (!inbox.recv(ackmsg)) {
+      Time::sleep(SLEEP_WAIT);
+    }
+    printf(
+      "waiting until process %d terminate...\n", ackmsg.content.ack.proc_id
+    );
+    
     // wait until the process terminate
     Message execinfomsg;
-    printf("waiting until the process %d terminate...\n", pid);
     while (!inbox.recv(execinfomsg)) {
       Time::sleep(SLEEP_WAIT);
     }
