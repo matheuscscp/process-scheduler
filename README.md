@@ -1,6 +1,13 @@
 trabalho-so
 ===========
 
+Universidade de Brasília
+Instituto de Ciências Exatas
+Departamento de Ciência da Computação
+Disciplina: Sistemas Operacionais
+
+Matheus Pimenta - 09/0125789
+
 Escalonador de processos em modo usuário (p/ Linux) feito para a disciplina de Sistemas Operacionais.
 
 O programa executável "proc" é CPU-bound, para testar o escalonador.
