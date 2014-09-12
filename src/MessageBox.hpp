@@ -28,7 +28,7 @@ class MessageOutbox {
   public:
     MessageOutbox(key_t key);
     void send(const Message& msg);
-    bool opened() const;
+    bool is_open() const;
 };
 
 #endif /* MESSAGEBOX_HPP_ */

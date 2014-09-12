@@ -6,16 +6,25 @@
  */
 
 #include <cstdio>
+#include <cstdlib>
+#include <signal.h>
 
 #include "defines.hpp"
 #include "MessageBox.hpp"
 
-using namespace std;
+static MessageInbox* message_inbox = NULL;
+
+static void close_inbox(int) {
+  if (message_inbox) {
+    message_inbox->close();
+    exit(0);
+  }
+}
 
 void termina_execprocd(int argc, char** argv) {
   // check if execprocd is not running
   MessageOutbox outbox(KEY_EXECPROCD);
-  if (!outbox.opened()) {
+  if (!outbox.is_open()) {
     fprintf(stderr, "termina_execprocd: execprocd is not running\n");
     return;
   }
@@ -25,6 +34,10 @@ void termina_execprocd(int argc, char** argv) {
   Message termmsg(Message::TERM);
   termmsg.content.term.key = inbox.getKey();
   outbox.send(termmsg);
+  
+  // set interruption signal to close the message inbox
+  message_inbox = &inbox;
+  signal(SIGINT, close_inbox);
   
   // receive report message
   Message repmsg;

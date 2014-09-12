@@ -15,9 +15,9 @@
 
 using namespace std;
 
-MessageInbox* message_inbox = NULL;
+static MessageInbox* message_inbox = NULL;
 
-void close_inbox(int) {
+static void close_inbox(int) {
   if (message_inbox) {
     message_inbox->close();
     exit(0);
@@ -70,17 +70,13 @@ void execproc(int argc, char** argv) {
   if (pid) {
     // check if execprocd is running
     MessageOutbox outbox(KEY_EXECPROCD);
-    if (!outbox.opened()) {
+    if (!outbox.is_open()) {
       fprintf(stderr, "execproc: execproc is not running\n");
       kill(pid, SIGKILL);
       return;
     }
     
     MessageInbox inbox;
-    
-    // set interruption signal to close the message inbox
-    message_inbox = &inbox;
-    signal(SIGINT, close_inbox);
     
     // send exec message to execprocd
     Message execmsg(Message::EXEC);
@@ -89,20 +85,20 @@ void execproc(int argc, char** argv) {
     execmsg.content.exec.key = inbox.getKey();
     outbox.send(execmsg);
     
+    // set interruption signal to close the message inbox
+    message_inbox = &inbox;
+    signal(SIGINT, close_inbox);
+    
     // wait until the process terminate
     Message execinfomsg;
     printf("waiting until the process terminate...\n");
-    while (true) {
+    while (!inbox.recv(execinfomsg)) {
       usleep(100000);
-      if (inbox.recv(execinfomsg)) {
-        if (execinfomsg.type == Message::EXECINFO) {
-          printf("process: %d\n", pid);
-          printf("wallclock time: %d\n", execinfomsg.content.execinfo.wclock);
-          printf("context changes: %d\n", execinfomsg.content.execinfo.nchange);
-          break;
-        }
-      }
     }
+    
+    printf("process: %d\n", pid);
+    printf("wallclock time: %d\n", execinfomsg.content.execinfo.wclock);
+    printf("context changes: %d\n", execinfomsg.content.execinfo.nchange);
   }
   // the child process is the actual process
   else {

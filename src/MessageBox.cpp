@@ -72,6 +72,6 @@ void MessageOutbox::send(const Message& msg) {
   }
 }
 
-bool MessageOutbox::opened() const {
+bool MessageOutbox::is_open() const {
   return (msqid >= 0);
 }
