@@ -42,7 +42,7 @@ void termina_execprocd(int argc, char** argv) {
   // receive report message
   Message repmsg;
   while (!inbox.recv(repmsg)) {
-    usleep(100000);
+    usleep(SLEEP_WAIT);
   }
   
   printf("processes executed: %d\n", repmsg.content.report.nexec);

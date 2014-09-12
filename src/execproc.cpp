@@ -93,7 +93,7 @@ void execproc(int argc, char** argv) {
     Message execinfomsg;
     printf("waiting until the process terminate...\n");
     while (!inbox.recv(execinfomsg)) {
-      usleep(100000);
+      usleep(SLEEP_WAIT);
     }
     
     printf("process: %d\n", pid);

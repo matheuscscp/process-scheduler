@@ -60,7 +60,7 @@ void cancela_proc(int argc, char** argv) {
   // receive exec info message
   Message execinfomsg;
   while (!inbox.recv(execinfomsg)) {
-    usleep(100000);
+    usleep(SLEEP_WAIT);
   }
   
   printf("process: %d\n", stopmsg.content.stop.pid);
