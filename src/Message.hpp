@@ -10,11 +10,11 @@
 
 #include <unistd.h>
 #include <sys/ipc.h>
+#include <ctime>
 
 struct ExecMessage {
   pid_t pid;
   int priority;
-  key_t key;
 };
 
 struct StopMessage {
@@ -27,7 +27,8 @@ struct TermMessage {
 };
 
 struct ExecInfoMessage {
-  int wclock, nchange;
+  clock_t wclock;
+  int nchange;
 };
 
 struct ReportMessage {

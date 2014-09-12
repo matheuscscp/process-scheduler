@@ -51,6 +51,8 @@ void cancela_proc(int argc, char** argv) {
   MessageInbox inbox;
   stopmsg.content.stop.key = inbox.getKey();
   
+  kill(stopmsg.content.stop.pid, SIGKILL);
+  
   outbox.send(stopmsg);
   
   // set interruption signal to close the message inbox
@@ -64,6 +66,9 @@ void cancela_proc(int argc, char** argv) {
   }
   
   printf("process: %d\n", stopmsg.content.stop.pid);
-  printf("wallclock time: %d\n", execinfomsg.content.execinfo.wclock);
+  printf(
+    "wallclock time: %.3f\n",
+    execinfomsg.content.execinfo.wclock/float(CLOCKS_PER_SEC)
+  );
   printf("context changes: %d\n", execinfomsg.content.execinfo.nchange);
 }
