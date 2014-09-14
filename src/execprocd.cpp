@@ -5,17 +5,24 @@
  *      Author: matheus
  */
 
-#include <sys/ipc.h>
 #include <signal.h>
+#include <sys/ipc.h>
+#include <sys/wait.h>
+#include <unistd.h>
 #include <cstdio>
 #include <cstdlib>
-#include <ctime>
 #include <cstring>
+#include <ctime>
 #include <list>
 #include <map>
+#include <string>
+#include <utility>
 
 #include "defines.hpp"
+#include "Message.hpp"
 #include "MessageBox.hpp"
+#include "ProcessLauncher.hpp"
+#include "Time.hpp"
 
 using namespace std;
 
@@ -87,14 +94,34 @@ Schedule choose_process() {
 }
 
 void execute_process(const ExecMessage& msg) {
+  ProcessLauncher launcher(msg.bufsiz, msg.shmkey);
+  pid_t pid;
+  
+  // the actual process
+  if ((pid = fork()) == 0) {
+    raise(SIGSTOP);
+    chdir(launcher.dir.c_str());
+    if (execv(launcher.argv[0], launcher.argv) < 0) {
+      launcher.freeargv();
+      exit(0);
+    }
+  }
+  
+  launcher.freeargv();
+  
+  // incrementing number of executed processes
   rep.nexec++;
+  
+  // sending acknowledgement message
   Message ackmsg(Message::EXECACK);
   ackmsg.content.ack.proc_id = next_proc_id++;
-  queues[msg.priority].push_back(
-    Process(ackmsg.content.ack.proc_id, msg.pid, msg.key)
-  );
-  MessageOutbox outbox(msg.key);
+  MessageOutbox outbox(msg.msgkey);
   outbox.send(ackmsg);
+  
+  // enqueuing process
+  queues[msg.priority].push_back(
+    Process(ackmsg.content.ack.proc_id, pid, msg.msgkey)
+  );
 }
 
 void stop_process(const StopMessage& msg) {
@@ -123,20 +150,21 @@ void stop_process(const StopMessage& msg) {
       }
       
       // stop searching if the process was found
-      if (p.pid) {
+      if (p.proc_id) {
         break;
       }
     }
   }
   
   // check if the process to stop is the process running
-  if (!p.pid && is_running_proc && running_proc.proc_id == msg.proc_id) {
+  if (!p.proc_id && is_running_proc && running_proc.proc_id == msg.proc_id) {
     p = running_proc;
   }
   
   // if the process exists, it is not in the dead pool
-  if (p.pid) {
+  if (p.proc_id) {
     kill(p.pid, SIGKILL);
+    waitpid(p.pid, NULL, 0);
     p.final_time = Time::get();
     rep.nstop++;
     dead_processes[p.proc_id] = p;
@@ -154,7 +182,7 @@ void stop_process(const StopMessage& msg) {
   }
   
   // answer exec info
-  Message execinfomsg(p.pid ? Message::EXECINFO : Message::NOTFOUND);
+  Message execinfomsg(p.proc_id ? Message::EXECINFO : Message::NOTFOUND);
   execinfomsg.content.execinfo.wclock = p.final_time - p.initial_time;
   execinfomsg.content.execinfo.nchange = p.nchange;
   outbox.send(execinfomsg);
@@ -233,7 +261,10 @@ void execprocd(int argc, char** argv) {
       kill(schedule.process.pid, SIGCONT);
       
       // wait until quantum is over or until process is killed
-      while (Time::get() < t && kill(schedule.process.pid, 0) >= 0) {
+      while (
+        Time::get() < t &&
+        waitpid(schedule.process.pid, NULL, WNOHANG) != schedule.process.pid
+      ) {
         Time::sleep(1);
         process_messages();
       }

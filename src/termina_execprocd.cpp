@@ -46,6 +46,6 @@ void termina_execprocd(int argc, char** argv) {
   }
   
   printf("processes executed: %d\n", repmsg.content.report.nexec);
-  printf("processes stopped: %d\n", repmsg.content.report.nstop);
+  printf("processes canceled: %d\n", repmsg.content.report.nstop);
   printf("context changes: %d\n", repmsg.content.report.nchange);
 }

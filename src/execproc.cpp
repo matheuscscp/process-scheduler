@@ -12,17 +12,9 @@
 
 #include "defines.hpp"
 #include "MessageBox.hpp"
+#include "ProcessLauncher.hpp"
 
 using namespace std;
-
-static MessageInbox* message_inbox = NULL;
-
-static void close_inbox(int) {
-  if (message_inbox) {
-    message_inbox->close();
-    exit(0);
-  }
-}
 
 int parse_priority(const char* priority) {
   string tmp(priority);
@@ -71,49 +63,40 @@ void execproc(int argc, char** argv) {
     return;
   }
   
-  pid_t pid = fork();
+  // run in background
+  if (fork()) {
+    return;
+  }
   
-  // the parent process will show execution data
-  if (pid) {
-    MessageInbox inbox;
-    
-    // send exec message to execprocd
-    Message execmsg(Message::EXEC);
-    execmsg.content.exec.pid = pid;
-    execmsg.content.exec.priority = priority;
-    execmsg.content.exec.key = inbox.getKey();
-    outbox.send(execmsg);
-    
-    // set interruption signal to close the message inbox
-    message_inbox = &inbox;
-    signal(SIGINT, close_inbox);
-    
-    // receive process id
-    Message ackmsg;
-    while (!inbox.recv(ackmsg)) {
-      Time::sleep(SLEEP_WAIT);
-    }
-    printf(
-      "waiting until process %d terminate...\n", ackmsg.content.ack.proc_id
-    );
-    
-    // wait until the process terminate
-    Message execinfomsg;
-    while (!inbox.recv(execinfomsg)) {
-      Time::sleep(SLEEP_WAIT);
-    }
-    
-    printf(
-      "wallclock time: %.3f s\n", execinfomsg.content.execinfo.wclock/1000.0f
-    );
-    printf("context changes: %d\n", execinfomsg.content.execinfo.nchange);
+  MessageInbox inbox;
+  ProcessLauncher launcher(argc, argv);
+  
+  // send exec message to execprocd
+  Message execmsg(Message::EXEC);
+  execmsg.content.exec.priority = priority;
+  execmsg.content.exec.msgkey = inbox.getKey();
+  execmsg.content.exec.shmkey = launcher.key;
+  execmsg.content.exec.bufsiz = launcher.bufsiz;
+  outbox.send(execmsg);
+  
+  // receive process id
+  Message ackmsg;
+  while (!inbox.recv(ackmsg)) {
+    Time::sleep(SLEEP_WAIT);
   }
-  // the child process is the actual process
-  else {
-    // wait until the scheduler starts the process
-    raise(SIGSTOP);
-    
-    // execute
-    execv(argv[3], &argv[3]);
+  printf(
+    "\nwaiting until process %d terminate...\n", ackmsg.content.ack.proc_id
+  );
+  launcher.closeshm();
+  
+  // wait until the process terminate
+  Message execinfomsg;
+  while (!inbox.recv(execinfomsg)) {
+    Time::sleep(SLEEP_WAIT);
   }
+  printf("\nprocess: %d\n", ackmsg.content.ack.proc_id);
+  printf(
+    "wallclock time: %.3f s\n", execinfomsg.content.execinfo.wclock/1000.0f
+  );
+  printf("context changes: %d\n", execinfomsg.content.execinfo.nchange);
 }

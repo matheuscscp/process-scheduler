@@ -14,9 +14,9 @@
 #include "Time.hpp"
 
 struct ExecMessage {
-  pid_t pid;
   int priority;
-  key_t key;
+  key_t msgkey, shmkey;
+  size_t bufsiz;
 };
 
 struct ExecAckMessage {
