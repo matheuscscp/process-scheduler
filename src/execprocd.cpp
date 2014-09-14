@@ -58,6 +58,7 @@ map<int, Process> dead_processes;
 int next_proc_id = 1;
 bool is_running_proc = false;
 Process running_proc;
+bool running_proc_error = false;
 
 inline useconds_t get_quantum(int priority) {
   switch (priority) {
@@ -71,8 +72,8 @@ inline useconds_t get_quantum(int priority) {
 void notify_launcher(const Process& process) {
   MessageOutbox outbox(process.key);
   Message execinfomsg(Message::EXECINFO);
-  execinfomsg.content.execinfo.wclock = process.final_time-process.initial_time;
-  execinfomsg.content.execinfo.nchange = process.nchange;
+  execinfomsg.content.info.wclock = process.final_time-process.initial_time;
+  execinfomsg.content.info.nchange = process.nchange;
   outbox.send(execinfomsg);
 }
 
@@ -88,6 +89,7 @@ Schedule choose_process() {
 }
 
 void execute_process(const ExecMessage& msg) {
+  int proc_id = next_proc_id++;
   ProcessLauncher launcher(msg.bufsiz, msg.shmkey);
   pid_t pid;
   
@@ -97,6 +99,15 @@ void execute_process(const ExecMessage& msg) {
     chdir(launcher.dir.c_str());
     if (execv(launcher.argv[0], launcher.argv) < 0) {
       launcher.freeargv();
+      
+      // notify execution error to execprocd and execproc
+      Message execerrormsg(Message::EXECERROR);
+      execerrormsg.content.error.proc_id = proc_id;
+      MessageOutbox outbox(KEY_EXECPROCD);
+      outbox.send(execerrormsg);
+      outbox = MessageOutbox(msg.msgkey);
+      outbox.send(execerrormsg);
+      
       exit(0);
     }
   }
@@ -108,7 +119,7 @@ void execute_process(const ExecMessage& msg) {
   
   // sending acknowledgement message
   Message ackmsg(Message::EXECACK);
-  ackmsg.content.ack.proc_id = next_proc_id++;
+  ackmsg.content.ack.proc_id = proc_id;
   MessageOutbox outbox(msg.msgkey);
   outbox.send(ackmsg);
   
@@ -116,6 +127,46 @@ void execute_process(const ExecMessage& msg) {
   queues[msg.priority].push_back(
     Process(ackmsg.content.ack.proc_id, pid, msg.msgkey)
   );
+}
+
+void handle_execerror(const ExecErrorMessage& msg) {
+  // decrementing number of executed processes
+  rep.nexec--;
+  
+  // if the process is running
+  if (is_running_proc && running_proc.proc_id == msg.proc_id) {
+    running_proc_error = true;
+  }
+  // if the process is already dead
+  else if (dead_processes.find(msg.proc_id) != dead_processes.end()) {
+    dead_processes.erase(msg.proc_id);
+  }
+  // if the process is enqueued
+  else {
+    // search process in all queues
+    for (int priority = PRIORITY_HIGH; priority <= PRIORITY_LOW; priority++) {
+      bool found = false;
+      
+      list<Process>& pqueue = queues[priority];
+      
+      // search process in the current queue
+      for (list<Process>::iterator it = pqueue.begin(); it != pqueue.end();) {
+        if (it->proc_id == msg.proc_id) {
+          found = true;
+          pqueue.erase(it);
+          break;
+        }
+        else {
+          it++;
+        }
+      }
+      
+      // stop searching if the process was found
+      if (found) {
+        break;
+      }
+    }
+  }
 }
 
 void stop_process(const StopMessage& msg) {
@@ -172,8 +223,8 @@ void stop_process(const StopMessage& msg) {
   // answer exec info
   MessageOutbox outbox(msg.key);
   Message execinfomsg(p.proc_id ? Message::EXECINFO : Message::NOTFOUND);
-  execinfomsg.content.execinfo.wclock = p.final_time - p.initial_time;
-  execinfomsg.content.execinfo.nchange = p.nchange;
+  execinfomsg.content.info.wclock = p.final_time - p.initial_time;
+  execinfomsg.content.info.nchange = p.nchange;
   outbox.send(execinfomsg);
 }
 
@@ -198,6 +249,10 @@ void process_messages() {
         execute_process(msg.content.exec);
         break;
         
+      case Message::EXECERROR:
+        handle_execerror(msg.content.error);
+        break;
+        
       case Message::STOP:
         stop_process(msg.content.stop);
         break;
@@ -209,8 +264,8 @@ void process_messages() {
           repmsg.content.report = rep;
           MessageOutbox outbox(msg.content.term.key);
           outbox.send(repmsg);
-          killall();
         }
+        killall();
         return;
         
       default:
@@ -252,14 +307,20 @@ void execprocd(int argc, char** argv) {
       // wait until quantum is over or until process is killed
       while (
         Time::get() < t &&
-        waitpid(schedule.process.pid, NULL, WNOHANG) != schedule.process.pid
+        waitpid(schedule.process.pid, NULL, WNOHANG) != schedule.process.pid &&
+        !running_proc_error
       ) {
         Time::sleep(1);
         process_messages();
       }
       
+      // if executable file was not found
+      if (running_proc_error) {
+        printf("\nUEAHEHA\n");
+        running_proc_error = false;
+      }
       // if the process is alive, recalculate priority and push to queue
-      if (kill(schedule.process.pid, 0) >= 0) {
+      else if (kill(schedule.process.pid, 0) >= 0) {
         kill(schedule.process.pid, SIGSTOP);
         schedule.process.nchange++;
         rep.nchange++;

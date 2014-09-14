@@ -41,9 +41,13 @@ struct ReportMessage {
   int nexec, nstop, nchange;
 };
 
+struct ExecErrorMessage {
+  int proc_id;
+};
+
 struct Message {
   enum {
-    NA = 0, EXEC, EXECACK, STOP, TERM, EXECINFO, REPORT, NOTFOUND
+    NA = 0, EXEC, EXECACK, STOP, TERM, EXECINFO, REPORT, NOTFOUND, EXECERROR
   };
   long type;
   union Content {
@@ -51,8 +55,9 @@ struct Message {
     ExecAckMessage ack;
     StopMessage stop;
     TermMessage term;
-    ExecInfoMessage execinfo;
+    ExecInfoMessage info;
     ReportMessage report;
+    ExecErrorMessage error;
   } content;
   Message(long type = NA);
 };

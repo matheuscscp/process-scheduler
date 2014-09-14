@@ -70,8 +70,6 @@ void cancela_proc(int argc, char** argv) {
   }
   
   printf("process: %d\n", stopmsg.content.stop.proc_id);
-  printf(
-    "wallclock time: %.3f s\n", execinfomsg.content.execinfo.wclock/1000.0f
-  );
-  printf("context changes: %d\n", execinfomsg.content.execinfo.nchange);
+  printf("wallclock time: %.3f s\n", execinfomsg.content.info.wclock/1000.0f);
+  printf("context changes: %d\n", execinfomsg.content.info.nchange);
 }

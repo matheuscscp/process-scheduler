@@ -84,10 +84,14 @@ void execproc(int argc, char** argv) {
   while (!inbox.recv(ackmsg)) {
     Time::sleep(SLEEP_WAIT);
   }
-  printf(
-    "\nwaiting until process %d terminate...\n", ackmsg.content.ack.proc_id
-  );
   launcher.closeshm();
+  if (ackmsg.type != Message::EXECERROR) { // ack received
+    printf("\nstarting process %d...\n", ackmsg.content.ack.proc_id);
+  }
+  else { // execution error
+    fprintf(stderr, "\nexecprocd: no such file or directory\n");
+    return;
+  }
   
   // wait until the process terminate
   Message execinfomsg;
@@ -97,12 +101,17 @@ void execproc(int argc, char** argv) {
   
   // terminate if execprocd is not running
   if (!outbox.is_open()) {
+    fprintf(stderr, "\nexecproc: execprocd has returned\n");
+    return;
+  }
+  
+  // execution error
+  if (execinfomsg.type == Message::EXECERROR) {
+    fprintf(stderr, "\nexecprocd: no such file or directory\n");
     return;
   }
   
   printf("\nprocess: %d\n", ackmsg.content.ack.proc_id);
-  printf(
-    "wallclock time: %.3f s\n", execinfomsg.content.execinfo.wclock/1000.0f
-  );
-  printf("context changes: %d\n", execinfomsg.content.execinfo.nchange);
+  printf("wallclock time: %.3f s\n", execinfomsg.content.info.wclock/1000.0f);
+  printf("context changes: %d\n", execinfomsg.content.info.nchange);
 }
