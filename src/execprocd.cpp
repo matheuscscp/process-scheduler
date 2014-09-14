@@ -127,7 +127,6 @@ void stop_process(const StopMessage& msg) {
         break;
       }
     }
-    
   }
   
   // check if the process to stop is the process running
@@ -228,8 +227,6 @@ void execprocd(int argc, char** argv) {
       running_proc = schedule.process;
       is_running_proc = true;
       
-      rep.nchange++;
-      
       // calculate quantum final time
       Time::type t = Time::get() + schedule.quantum;
       
@@ -245,6 +242,7 @@ void execprocd(int argc, char** argv) {
       if (kill(schedule.process.pid, 0) >= 0) {
         kill(schedule.process.pid, SIGSTOP);
         schedule.process.nchange++;
+        rep.nchange++;
         queues[rand()%3].push_back(schedule.process);
       }
       // if the process is dead, mark final time, put in dead pool and notify
