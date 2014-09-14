@@ -15,22 +15,20 @@
 MessageInbox::MessageInbox(key_t key) {
   // create a message queue with fixed (known) key
   if (key) {
-    // check if the message queue already exists
-    msqid = msgget(key, 0);
+    msqid = msgget(key, (IPC_CREAT | IPC_EXCL) | 0777);
     
-    // if the message queue does not exist, create
-    if (msqid < 0) {
-      msqid = msgget(key, IPC_CREAT | 0777);
-      this->key = key;
-    }
     // if the message queue already exists, this object will be invalid
-    else {
+    if (msqid < 0) {
       this->key = 0;
+    }
+    // save the key
+    else {
+      this->key = key;
     }
   }
   // create a message queue with any key
   else {
-    this->key = KEY_EXECPROCD + 1;
+    this->key = 1;
     do {
       msqid = msgget(this->key, (IPC_CREAT | IPC_EXCL) | 0777);
       if (msqid < 0) {
