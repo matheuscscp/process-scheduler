@@ -59,6 +59,7 @@ int next_proc_id = 1;
 bool is_running_proc = false;
 Process running_proc;
 bool running_proc_error = false;
+map<int, int> changes;
 
 inline useconds_t get_quantum(int priority) {
   switch (priority) {
@@ -132,6 +133,7 @@ void execute_process(const ExecMessage& msg) {
 void handle_execerror(const ExecErrorMessage& msg) {
   // decrementing number of executed processes
   rep.nexec--;
+  rep.nchange -= changes[msg.proc_id];
   
   // if the process is running
   if (is_running_proc && running_proc.proc_id == msg.proc_id) {
@@ -316,7 +318,6 @@ void execprocd(int argc, char** argv) {
       
       // if executable file was not found
       if (running_proc_error) {
-        printf("\nUEAHEHA\n");
         running_proc_error = false;
       }
       // if the process is alive, recalculate priority and push to queue
@@ -324,6 +325,7 @@ void execprocd(int argc, char** argv) {
         kill(schedule.process.pid, SIGSTOP);
         schedule.process.nchange++;
         rep.nchange++;
+        changes[schedule.process.proc_id]++;
         queues[rand()%3].push_back(schedule.process);
       }
       // if the process is dead, mark final time, put in dead pool and notify
