@@ -91,9 +91,15 @@ void execproc(int argc, char** argv) {
   
   // wait until the process terminate
   Message execinfomsg;
-  while (!inbox.recv(execinfomsg)) {
+  while (!inbox.recv(execinfomsg) && outbox.is_open()) {
     Time::sleep(SLEEP_WAIT);
   }
+  
+  // terminate if execprocd is not running
+  if (!outbox.is_open()) {
+    return;
+  }
+  
   printf("\nprocess: %d\n", ackmsg.content.ack.proc_id);
   printf(
     "wallclock time: %.3f s\n", execinfomsg.content.execinfo.wclock/1000.0f

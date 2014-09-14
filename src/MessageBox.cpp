@@ -60,16 +60,17 @@ void MessageInbox::close() {
   }
 }
 
-MessageOutbox::MessageOutbox(key_t key) : msqid(msgget(key, 0)) {
+MessageOutbox::MessageOutbox(key_t key) : key(key) {
   
 }
 
 void MessageOutbox::send(const Message& msg) {
+  int msqid = msgget(key, 0);
   if (msqid >= 0) {
     msgsnd(msqid, &msg, sizeof(Message::Content), 0);
   }
 }
 
 bool MessageOutbox::is_open() const {
-  return (msqid >= 0);
+  return (msgget(key, 0) >= 0);
 }

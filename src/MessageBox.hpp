@@ -24,7 +24,7 @@ class MessageInbox {
 
 class MessageOutbox {
   private:
-    int msqid;
+    key_t key;
   public:
     MessageOutbox(key_t key);
     void send(const Message& msg);

@@ -69,13 +69,7 @@ inline useconds_t get_quantum(int priority) {
 }
 
 void notify_launcher(const Process& process) {
-  // check if launcher is still alive
   MessageOutbox outbox(process.key);
-  if (!outbox.is_open()) {
-    return;
-  }
-  
-  // notify
   Message execinfomsg(Message::EXECINFO);
   execinfomsg.content.execinfo.wclock = process.final_time-process.initial_time;
   execinfomsg.content.execinfo.nchange = process.nchange;
@@ -175,13 +169,8 @@ void stop_process(const StopMessage& msg) {
     p = it->second;
   }
   
-  // check if killer outbox is open
-  MessageOutbox outbox(msg.key);
-  if (!outbox.is_open()) {
-    return;
-  }
-  
   // answer exec info
+  MessageOutbox outbox(msg.key);
   Message execinfomsg(p.proc_id ? Message::EXECINFO : Message::NOTFOUND);
   execinfomsg.content.execinfo.wclock = p.final_time - p.initial_time;
   execinfomsg.content.execinfo.nchange = p.nchange;
