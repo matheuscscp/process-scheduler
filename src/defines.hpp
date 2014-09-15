@@ -20,6 +20,9 @@
 #define QUANTUM_MED   100
 #define QUANTUM_LOW   100
 
-#define SLEEP_WAIT  20
+#define SLEEP_WAIT      20
+#define SLEEP_WAITFAST  5
+
+#define TIMEOUT_EXECINFO  2000
 
 #endif /* DEFINES_HPP_ */

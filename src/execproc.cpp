@@ -95,14 +95,31 @@ void execproc(int argc, char** argv) {
   
   // wait until the process terminate
   Message execinfomsg;
-  while (!inbox.recv(execinfomsg) && outbox.is_open()) {
+  bool recvd;
+  for (
+    recvd = inbox.recv(execinfomsg);
+    !recvd && outbox.is_open();
+    recvd = inbox.recv(execinfomsg)
+  ) {
     Time::sleep(SLEEP_WAIT);
   }
   
   // terminate if execprocd is not running
-  if (!outbox.is_open()) {
-    fprintf(stderr, "\nexecproc: execprocd has returned\n");
-    return;
+  if (!recvd && !outbox.is_open()) {
+    // wait a few seconds until exec info message is received, then return
+    Time::type t = Time::get() + TIMEOUT_EXECINFO;
+    for (
+      recvd = inbox.recv(execinfomsg);
+      !recvd && t > Time::get();
+      recvd = inbox.recv(execinfomsg)
+    ) {
+      Time::sleep(SLEEP_WAIT);
+    }
+    
+    if (!recvd) {
+      fprintf(stderr, "\nexecproc: execprocd has returned\n");
+      return;
+    }
   }
   
   // execution error

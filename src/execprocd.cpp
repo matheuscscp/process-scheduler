@@ -312,7 +312,7 @@ void execprocd(int argc, char** argv) {
         waitpid(schedule.process.pid, NULL, WNOHANG) != schedule.process.pid &&
         !running_proc_error
       ) {
-        Time::sleep(1);
+        Time::sleep(SLEEP_WAITFAST);
         process_messages();
       }
       
