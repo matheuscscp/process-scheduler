@@ -1,7 +1,7 @@
 trabalho-so
 ===========
 
-Universidade de Brasília
+Universidade de Brasília<\ br>
 Instituto de Ciências Exatas
 Departamento de Ciência da Computação
 Disciplina: Sistemas Operacionais
