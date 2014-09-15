@@ -231,6 +231,7 @@ void stop_process(const StopMessage& msg) {
 }
 
 void killall() {
+  // queues
   for (int priority = PRIORITY_HIGH; priority <= PRIORITY_LOW; priority++) {
     list<Process>& pqueue = queues[priority];
     while (pqueue.size()) {
@@ -240,6 +241,13 @@ void killall() {
       kill(p.pid, SIGKILL);
       notify_launcher(p);
     }
+  }
+  
+  // running
+  if (is_running_proc) {
+    running_proc.final_time = Time::get();
+    kill(running_proc.pid, SIGKILL);
+    notify_launcher(running_proc);
   }
 }
 
