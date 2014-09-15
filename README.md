@@ -8,4 +8,4 @@ Disciplina: Sistemas Operacionais
 
 Matheus Pimenta - 09/0125789
 
-Escalonador de processos em modo usuário (p/ Linux) feito para a disciplina de Sistemas Operacionais.
+Escalonador de processos em modo usuário (p/ Unix) feito na disciplina de Sistemas Operacionais.
