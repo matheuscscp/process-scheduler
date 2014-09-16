@@ -7,7 +7,7 @@
 
 #include "ProcessLauncher.hpp"
 
-#include <stdlib.h>
+#include <cstdlib>
 #include <sys/shm.h>
 #include <unistd.h>
 #include <cstring>

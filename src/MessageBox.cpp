@@ -7,7 +7,6 @@
 
 #include "MessageBox.hpp"
 
-#include <stddef.h>
 #include <sys/msg.h>
 
 #include "defines.hpp"

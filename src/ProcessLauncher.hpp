@@ -8,7 +8,6 @@
 #ifndef PROCESSLAUNCHER_HPP_
 #define PROCESSLAUNCHER_HPP_
 
-#include <stddef.h>
 #include <sys/ipc.h>
 #include <string>
 
