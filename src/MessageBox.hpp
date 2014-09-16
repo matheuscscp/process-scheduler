@@ -17,7 +17,7 @@ class MessageInbox {
   public:
     MessageInbox(key_t key = 0);
     ~MessageInbox();
-    bool recv(Message& msg);
+    bool recv(Message& msg) const;
     key_t getKey() const;
     void close();
 };
@@ -27,7 +27,7 @@ class MessageOutbox {
     key_t key;
   public:
     MessageOutbox(key_t key);
-    void send(const Message& msg);
+    void send(const Message& msg) const;
     bool is_open() const;
 };
 

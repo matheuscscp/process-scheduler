@@ -7,7 +7,7 @@
 
 #include <cstdio>
 #include <cstdlib>
-#include <signal.h>
+#include <csignal>
 
 #include "defines.hpp"
 #include "MessageBox.hpp"

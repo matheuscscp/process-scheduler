@@ -5,21 +5,18 @@
  *      Author: matheus
  */
 
-#include <signal.h>
 #include <sys/ipc.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <csignal>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <ctime>
 #include <list>
 #include <map>
 #include <string>
-#include <utility>
 
 #include "defines.hpp"
-#include "Message.hpp"
 #include "MessageBox.hpp"
 #include "ProcessLauncher.hpp"
 #include "Time.hpp"
@@ -42,8 +39,8 @@ struct Process {
 
 struct Schedule {
   Process process;
-  useconds_t quantum;
-  Schedule(const Process& process, useconds_t quantum) :
+  Time::type quantum;
+  Schedule(const Process& process, Time::type quantum) :
   process(process), quantum(quantum)
   {
     
@@ -61,7 +58,7 @@ Process running_proc;
 bool running_proc_error = false;
 map<int, int> changes;
 
-inline useconds_t get_quantum(int priority) {
+inline Time::type get_quantum(int priority) {
   switch (priority) {
     case PRIORITY_HIGH: return QUANTUM_HIGH;
     case PRIORITY_MED:  return QUANTUM_MED;

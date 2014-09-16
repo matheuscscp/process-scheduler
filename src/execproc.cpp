@@ -5,14 +5,14 @@
  *      Author: matheus
  */
 
-#include <signal.h>
+#include <unistd.h>
 #include <cstdio>
-#include <cstdlib>
 #include <string>
 
 #include "defines.hpp"
 #include "MessageBox.hpp"
 #include "ProcessLauncher.hpp"
+#include "Time.hpp"
 
 using namespace std;
 

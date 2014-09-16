@@ -42,7 +42,7 @@ MessageInbox::~MessageInbox() {
   close();
 }
 
-bool MessageInbox::recv(Message& msg) {
+bool MessageInbox::recv(Message& msg) const {
   if (key) {
     return (msgrcv(msqid, &msg, sizeof(Message::Content), 0, IPC_NOWAIT) >= 0);
   }
@@ -64,7 +64,7 @@ MessageOutbox::MessageOutbox(key_t key) : key(key) {
   
 }
 
-void MessageOutbox::send(const Message& msg) {
+void MessageOutbox::send(const Message& msg) const {
   int msqid = msgget(key, 0);
   if (msqid >= 0) {
     msgsnd(msqid, &msg, sizeof(Message::Content), 0);
