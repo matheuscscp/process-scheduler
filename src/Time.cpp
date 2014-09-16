@@ -15,7 +15,7 @@
 #include <cerrno>
 #include <sys/time.h>
 
-#define HAVE_CLOCK_GETTIME  1
+#define HAVE_CLOCK_GETTIME  0
 #define HAVE_NANOSLEEP      1
 
 typedef enum
