@@ -313,6 +313,7 @@ void execprocd(int argc, char** argv) {
       
       // wait until quantum is over or until process is killed
       while (
+        !quit &&
         Time::get() < t &&
         waitpid(schedule.process.pid, NULL, WNOHANG) != schedule.process.pid &&
         !running_proc_error
@@ -321,8 +322,12 @@ void execprocd(int argc, char** argv) {
         process_messages();
       }
       
+      // execprocd was terminated
+      if (quit) {
+        break;
+      }
       // if executable file was not found
-      if (running_proc_error) {
+      else if (running_proc_error) {
         running_proc_error = false;
       }
       // if the process is alive, recalculate priority and push to queue
@@ -350,6 +355,6 @@ void execprocd(int argc, char** argv) {
     }
   }
   
-  // destroy socket
+  // destroy inbox
   delete inbox;
 }
