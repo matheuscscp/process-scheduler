@@ -74,10 +74,10 @@ ProcessLauncher::ProcessLauncher(size_t bufsiz, key_t key) : bufsiz(0), key(0) {
   }
   
   // copying arguments from temporary buffer to execv syscall format buffers
-  argv = (char**)malloc(sizeof(char*)*(args.size() + 1));
+  argv = new char*[args.size() + 1];
   i = 0;
   for (list<string>::iterator it = args.begin(); it != args.end(); it++) {
-    argv[i] = (char*)malloc(sizeof(char)*(it->size() + 1));
+    argv[i] = new char[it->size() + 1];
     strcpy(argv[i++], it->c_str());
   }
   argv[i++] = NULL;
@@ -104,9 +104,9 @@ void ProcessLauncher::closeshm() {
 void ProcessLauncher::freeargv() {
   if (argv) {
     for (size_t i = 0; argv[i] != NULL; i++) {
-      free(argv[i]);
+      delete[] argv[i];
     }
-    free(argv);
+    delete[] argv;
     argv = NULL;
   }
 }
