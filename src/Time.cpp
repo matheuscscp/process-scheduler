@@ -28,7 +28,9 @@ typedef enum
 } SDL_bool;
 typedef unsigned int Uint32;
 
+#if HAVE_CLOCK_GETTIME
 static timespec start_ts;
+#endif
 static SDL_bool has_monotonic_time = SDL_FALSE;
 static timeval start_tv;
 static SDL_bool ticks_started = SDL_FALSE;
