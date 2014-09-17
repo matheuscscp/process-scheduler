@@ -16,7 +16,7 @@
 using namespace std;
 
 ProcessLauncher::ProcessLauncher(int argc, char** argv) : argv(NULL) {
-  char* tmpdir = get_current_dir_name();
+  char* tmpdir = getcwd(NULL, 0);
   
   // calculating buffer size
   bufsiz = strlen(tmpdir) + 1; // working directory

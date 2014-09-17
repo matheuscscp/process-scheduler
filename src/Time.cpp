@@ -17,6 +17,9 @@
 
 #define HAVE_CLOCK_GETTIME  0
 #define HAVE_NANOSLEEP      1
+#ifdef  __APPLE__
+#undef  __APPLE__
+#endif
 
 typedef enum
 {
