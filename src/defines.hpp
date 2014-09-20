@@ -9,7 +9,7 @@
 #define DEFINES_HPP_
 
 // Unix keys for interprocess communication
-#define KEY_EXECPROCD 0x505C
+#define KEY_EXECPROCD 0x90125789
 
 // array indexes
 #define PRIORITY_NA   -1

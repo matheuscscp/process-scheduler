@@ -27,7 +27,7 @@ MessageInbox::MessageInbox(key_t key) {
   }
   // create a message queue with any key
   else {
-    this->key = 1;
+    this->key = KEY_EXECPROCD + 1;
     do {
       msqid = msgget(this->key, (IPC_CREAT | IPC_EXCL) | 0777);
       if (msqid < 0) {

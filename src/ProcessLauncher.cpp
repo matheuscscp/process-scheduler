@@ -13,6 +13,8 @@
 #include <cstring>
 #include <list>
 
+#include "defines.hpp"
+
 using namespace std;
 
 ProcessLauncher::ProcessLauncher(int argc, char** argv) : argv(NULL) {
@@ -26,7 +28,7 @@ ProcessLauncher::ProcessLauncher(int argc, char** argv) : argv(NULL) {
   bufsiz++; // null termination of arguments array
   
   // allocating shared memory
-  key = 1;
+  key = KEY_EXECPROCD + 1;
   do {
     shmid = shmget(key, bufsiz, (IPC_CREAT | IPC_EXCL) | 0777);
     if (shmid < 0) {
