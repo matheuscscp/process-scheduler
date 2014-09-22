@@ -34,7 +34,7 @@ void cancela_proc(int argc, char** argv) {
   }
   
   // check if execprocd is running
-  MessageOutbox outbox(KEY_EXECPROCD);
+  MessageOutbox outbox(IPCKEY);
   if (!outbox.is_open()) {
     fprintf(stderr, "cancela_proc: execprocd is not running\n");
     return;

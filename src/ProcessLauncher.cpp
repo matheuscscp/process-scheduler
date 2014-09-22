@@ -28,7 +28,7 @@ ProcessLauncher::ProcessLauncher(int argc, char** argv) : argv(NULL) {
   bufsiz++; // null termination of arguments array
   
   // allocating shared memory
-  key = KEY_EXECPROCD;
+  key = IPCKEY;
   do {
     shmid = shmget(key, bufsiz, (IPC_CREAT | IPC_EXCL) | 0777);
     if (shmid < 0) {

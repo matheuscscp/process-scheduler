@@ -29,11 +29,25 @@ struct Process {
   key_t key;
   int nchange;
   Time::type initial_time, final_time;
-  Process(int proc_id = 0, pid_t pid = 0, key_t key = 0) :
+  int current_priority;
+  int schedule_count;
+  Process(int proc_id = 0, pid_t pid = 0, key_t key = 0, int curr_pri = 0) :
   proc_id(proc_id),
-  pid(pid), key(key), nchange(0), initial_time(Time::get()), final_time(0)
+  pid(pid), key(key), nchange(0), initial_time(Time::get()), final_time(0),
+  current_priority(curr_pri), schedule_count(TIMES_SCHEDULE - 1)
   {
     
+  }
+  
+  int priority() {
+    if (schedule_count > 0) {
+      schedule_count--;
+    }
+    else {
+      schedule_count = TIMES_SCHEDULE - 1;
+      current_priority = rand()%PRIORITY_MAX;
+    }
+    return current_priority;
   }
 };
 
@@ -50,7 +64,7 @@ struct Schedule {
 bool quit = false;
 MessageInbox* inbox = NULL;
 ReportMessage rep;
-list<Process> queues[3];
+list<Process> queues[PRIORITY_MAX];
 map<int, Process> dead_processes;
 int next_proc_id = 1;
 bool is_running_proc = false;
@@ -93,21 +107,22 @@ void execute_process(const ExecMessage& msg) {
   
   // the actual process
   if ((pid = fork()) == 0) {
-    raise(SIGSTOP);
+    kill(getpid(), SIGSTOP);
     chdir(launcher.dir.c_str());
-    if (execv(launcher.argv[0], launcher.argv) < 0) {
-      launcher.freeargv();
-      
-      // notify execution error to execprocd and execproc
-      Message execerrormsg(Message::EXECERROR);
-      execerrormsg.content.error.proc_id = proc_id;
-      MessageOutbox outbox(KEY_EXECPROCD);
-      outbox.send(execerrormsg);
-      outbox = MessageOutbox(msg.msgkey);
-      outbox.send(execerrormsg);
-      
-      exit(0);
-    }
+    execv(launcher.argv[0], launcher.argv);
+    
+    // will run if execv returned (obviously an error)
+    launcher.freeargv();
+    
+    // notify execution error to execprocd and execproc
+    Message execerrormsg(Message::EXECERROR);
+    execerrormsg.content.error.proc_id = proc_id;
+    MessageOutbox outbox(IPCKEY);
+    outbox.send(execerrormsg);
+    outbox = MessageOutbox(msg.msgkey);
+    outbox.send(execerrormsg);
+    
+    exit(0);
   }
   
   launcher.freeargv();
@@ -123,7 +138,7 @@ void execute_process(const ExecMessage& msg) {
   
   // enqueuing process
   queues[msg.priority].push_back(
-    Process(ackmsg.content.ack.proc_id, pid, msg.msgkey)
+    Process(ackmsg.content.ack.proc_id, pid, msg.msgkey, msg.priority)
   );
 }
 
@@ -283,7 +298,7 @@ void process_messages() {
 
 void execprocd(int argc, char** argv) {
   // check if procexecd is already running
-  inbox = new MessageInbox(KEY_EXECPROCD);
+  inbox = new MessageInbox(IPCKEY);
   if (inbox->getKey() == 0) {
     fprintf(stderr, "execprocd: already running\n");
     delete inbox;
@@ -336,7 +351,7 @@ void execprocd(int argc, char** argv) {
         schedule.process.nchange++;
         rep.nchange++;
         changes[schedule.process.proc_id]++;
-        queues[rand()%3].push_back(schedule.process);
+        queues[schedule.process.priority()].push_back(schedule.process);
       }
       // if the process is dead, mark final time, put in dead pool and notify
       else if (

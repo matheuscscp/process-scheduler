@@ -8,14 +8,8 @@
 #ifndef DEFINES_HPP_
 #define DEFINES_HPP_
 
-// Unix keys for interprocess communication
-#define KEY_EXECPROCD 0x90125789
-
-// array indexes
-#define PRIORITY_NA   -1
-#define PRIORITY_HIGH 0
-#define PRIORITY_MED  1
-#define PRIORITY_LOW  2
+// Unix key for interprocess communication
+#define IPCKEY  0x90125789
 
 // milliseconds
 #define QUANTUM_NA    0
@@ -29,5 +23,21 @@
 
 // milliseconds
 #define TIMEOUT_EXECINFO  2000
+
+// number of repetitions
+#define TIMES_SCHEDULE  4
+
+enum Priority {
+  // don't change
+  PRIORITY_NA = -1,
+  
+  // insert new priorities here
+  PRIORITY_HIGH,
+  PRIORITY_MED,
+  PRIORITY_LOW,
+  
+  // don't remove
+  PRIORITY_MAX
+};
 
 #endif /* DEFINES_HPP_ */
