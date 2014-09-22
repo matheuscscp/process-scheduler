@@ -42,7 +42,7 @@ void cancela_proc(int argc, char** argv) {
   
   Message stopmsg(Message::STOP);
   
-  // parse pid
+  // parse proc_id
   stringstream ss;
   ss << argv[2];
   ss >> stopmsg.content.stop.proc_id;
