@@ -242,8 +242,16 @@ void stop_process(const StopMessage& msg) {
   outbox.send(execinfomsg);
 }
 
-void killall() {
-  // queues
+void terminate(const TermMessage& msg) {
+  quit = true;
+  
+  // send report
+  Message repmsg(Message::REPORT);
+  repmsg.content.report = rep;
+  MessageOutbox outbox(msg.key);
+  outbox.send(repmsg);
+  
+  // kill all processes in the queues
   for (int priority = PRIORITY_HIGH; priority <= PRIORITY_LOW; priority++) {
     list<Process>& pqueue = queues[priority];
     while (pqueue.size()) {
@@ -255,7 +263,7 @@ void killall() {
     }
   }
   
-  // running
+  // kill running process
   if (is_running_proc) {
     running_proc.final_time = Time::get();
     kill(running_proc.pid, SIGKILL);
@@ -267,31 +275,11 @@ void process_messages() {
   Message msg;
   while (inbox->recv(msg)) {
     switch (msg.type) {
-      case Message::EXEC:
-        execute_process(msg.content.exec);
-        break;
-        
-      case Message::EXECERROR:
-        handle_execerror(msg.content.error);
-        break;
-        
-      case Message::STOP:
-        stop_process(msg.content.stop);
-        break;
-        
-      case Message::TERM:
-        quit = true;
-        {
-          Message repmsg(Message::REPORT);
-          repmsg.content.report = rep;
-          MessageOutbox outbox(msg.content.term.key);
-          outbox.send(repmsg);
-        }
-        killall();
-        return;
-        
-      default:
-        break;
+      case Message::EXEC:       execute_process(msg.content.exec);    break;
+      case Message::EXECERROR:  handle_execerror(msg.content.error);  break;
+      case Message::STOP:       stop_process(msg.content.stop);       break;
+      case Message::TERM:       terminate(msg.content.term);          return;
+      default:                                                        break;
     }
   }
 }
