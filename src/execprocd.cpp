@@ -61,18 +61,18 @@ struct Schedule {
   }
 };
 
-bool quit = false;
-MessageInbox* inbox = NULL;
-ReportMessage rep;
-list<Process> queues[PRIORITY_MAX];
-map<int, Process> dead_processes;
-int next_proc_id = 1;
-bool is_running_proc = false;
-Process running_proc;
-bool running_proc_error = false;
-map<int, int> changes;
+static bool quit = false;
+static MessageInbox* inbox = NULL;
+static ReportMessage rep;
+static list<Process> queues[PRIORITY_MAX];
+static map<int, Process> dead_processes;
+static int next_proc_id = 1;
+static bool is_running_proc = false;
+static Process running_proc;
+static bool running_proc_error = false;
+static map<int, int> changes;
 
-void notify_launcher(const Process& process) {
+static void notify_launcher(const Process& process) {
   MessageOutbox outbox(process.key);
   Message execinfomsg(Message::EXECINFO);
   execinfomsg.content.info.wclock = process.final_time-process.initial_time;
@@ -80,7 +80,7 @@ void notify_launcher(const Process& process) {
   outbox.send(execinfomsg);
 }
 
-Schedule choose_process() {
+static Schedule choose_process() {
   struct Quanta {
     Time::type value[PRIORITY_MAX];
     Quanta() {
@@ -101,7 +101,7 @@ Schedule choose_process() {
   return Schedule(Process(0, 0), 0);
 }
 
-void execute_process(const ExecMessage& msg) {
+static void execute_process(const ExecMessage& msg) {
   int proc_id = next_proc_id++;
   ProcessLauncher launcher(msg.bufsiz, msg.shmkey);
   pid_t pid;
@@ -143,7 +143,7 @@ void execute_process(const ExecMessage& msg) {
   );
 }
 
-void handle_execerror(const ExecErrorMessage& msg) {
+static void handle_execerror(const ExecErrorMessage& msg) {
   // decrementing number of executed processes
   rep.nexec--;
   rep.nchange -= changes[msg.proc_id];
@@ -184,7 +184,7 @@ void handle_execerror(const ExecErrorMessage& msg) {
   }
 }
 
-void stop_process(const StopMessage& msg) {
+static void stop_process(const StopMessage& msg) {
   Process p;
   
   // check if process is not in the dead pool
@@ -243,7 +243,7 @@ void stop_process(const StopMessage& msg) {
   outbox.send(execinfomsg);
 }
 
-void terminate(const TermMessage& msg) {
+static void terminate(const TermMessage& msg) {
   quit = true;
   
   // send report
@@ -272,7 +272,7 @@ void terminate(const TermMessage& msg) {
   }
 }
 
-void process_messages() {
+static void process_messages() {
   Message msg;
   while (inbox->recv(msg)) {
     switch (msg.type) {
