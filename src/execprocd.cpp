@@ -72,15 +72,6 @@ Process running_proc;
 bool running_proc_error = false;
 map<int, int> changes;
 
-inline Time::type get_quantum(int priority) {
-  switch (priority) {
-    case PRIORITY_HIGH: return QUANTUM_HIGH;
-    case PRIORITY_MED:  return QUANTUM_MED;
-    case PRIORITY_LOW:  return QUANTUM_LOW;
-    default:            return QUANTUM_NA;
-  }
-}
-
 void notify_launcher(const Process& process) {
   MessageOutbox outbox(process.key);
   Message execinfomsg(Message::EXECINFO);
@@ -90,11 +81,21 @@ void notify_launcher(const Process& process) {
 }
 
 Schedule choose_process() {
+  struct Quanta {
+    Time::type value[PRIORITY_MAX];
+    Quanta() {
+      value[PRIORITY_HIGH]  = QUANTUM_HIGH;
+      value[PRIORITY_MED]   = QUANTUM_MED;
+      value[PRIORITY_LOW]   = QUANTUM_LOW;
+    }
+  };
+  static Quanta quanta;
+  
   for (int priority = PRIORITY_HIGH; priority <= PRIORITY_LOW; priority++) {
     if (queues[priority].size()) {
       Process p = queues[priority].front();
       queues[priority].pop_front();
-      return Schedule(p, get_quantum(priority));
+      return Schedule(p, quanta.value[priority]);
     }
   }
   return Schedule(Process(0, 0), 0);
