@@ -16,20 +16,6 @@
 
 using namespace std;
 
-int parse_priority(const char* priority) {
-  string tmp(priority);
-  if (tmp == "hi") {
-    return PRIORITY_HIGH;
-  }
-  if (tmp == "med") {
-    return PRIORITY_MED;
-  }
-  if (tmp == "lo") {
-    return PRIORITY_LOW;
-  }
-  return PRIORITY_NA;
-}
-
 static void usagemode(char* exe) {
   fprintf(
     stderr,
@@ -41,6 +27,20 @@ static void usagemode(char* exe) {
   fprintf(stderr, "    hi\n");
   fprintf(stderr, "    med\n");
   fprintf(stderr, "    lo\n");
+}
+
+static int parse_priority(const char* priority) {
+  string tmp(priority);
+  if (tmp == "hi") {
+    return PRIORITY_HIGH;
+  }
+  if (tmp == "med") {
+    return PRIORITY_MED;
+  }
+  if (tmp == "lo") {
+    return PRIORITY_LOW;
+  }
+  return PRIORITY_NA;
 }
 
 void execproc(int argc, char** argv) {
