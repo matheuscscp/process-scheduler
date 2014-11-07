@@ -18,41 +18,42 @@ using namespace std;
 
 int parse_priority(const char* priority) {
   string tmp(priority);
-  if (tmp == "high") {
+  if (tmp == "hi") {
     return PRIORITY_HIGH;
   }
-  if (tmp == "medium") {
+  if (tmp == "med") {
     return PRIORITY_MED;
   }
-  if (tmp == "low") {
+  if (tmp == "lo") {
     return PRIORITY_LOW;
   }
   return PRIORITY_NA;
 }
 
-static void usagemode() {
+static void usagemode(char* exe) {
   fprintf(
     stderr,
-    "execproc: Usage mode: trabalho-so "
-    "execproc <priority> <exec_file> [<args>...]\n"
+    "execproc: Usage mode: %s "
+    "execproc <priority> <exec_file> [<args>...]\n",
+    exe
   );
   fprintf(stderr, "  Priorities:\n");
-  fprintf(stderr, "    high\n");
-  fprintf(stderr, "    medium\n");
-  fprintf(stderr, "    low\n");
+  fprintf(stderr, "    hi\n");
+  fprintf(stderr, "    med\n");
+  fprintf(stderr, "    lo\n");
 }
 
 void execproc(int argc, char** argv) {
   // check usage mode
   if (argc < 4) {
-    usagemode();
+    usagemode(argv[0]);
     return;
   }
   
   // check priority
   int priority = parse_priority(argv[2]);
   if (priority == PRIORITY_NA) {
-    usagemode();
+    usagemode(argv[0]);
     return;
   }
   

@@ -4,13 +4,15 @@
 
 int main(int argc, char** argv) {
   
-  int nsegs = 30;
-  if (argc > 1) {
-    sscanf(argv[1], "%d", &nsegs);
+  if (argc < 2) {
+    fprintf(stderr, "Usage mode: %s <number_of_seconds_to_last>\n", argv[0]);
+    return 0;
   }
+  int nsec;
+  sscanf(argv[1], "%d", &nsec);
   
   int cont = 0;
-  for (time_t t = time(NULL) + nsegs + 1; t > time(NULL);) {
+  for (time_t t = time(NULL) + nsec + 1; t > time(NULL);) {
     cont++;
   }
   

@@ -28,7 +28,7 @@ void cancela_proc(int argc, char** argv) {
   // check usage mode
   if (argc < 3) {
     fprintf(
-      stderr, "cancela_proc: Usage mode: trabalho-so cancela_proc <pid>\n"
+      stderr, "cancela_proc: Usage mode: %s cancela_proc <pid>\n", argv[0]
     );
     return;
   }
